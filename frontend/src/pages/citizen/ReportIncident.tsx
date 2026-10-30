@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { incidentService } from '../../services/api';
+import api from '../../services/api';
 import { IncidentReport } from '../../types';
-import { ShieldAlert, CheckCircle2, AlertTriangle, ArrowRight, Copy } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, AlertTriangle, ArrowRight, Copy, Upload, FileText, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ReportIncident: React.FC = () => {
@@ -13,10 +14,33 @@ export const ReportIncident: React.FC = () => {
   const [consentShareIntel, setConsentShareIntel] = useState(true);
   const [indicatorsText, setIndicatorsText] = useState('');
   const [transactionRef, setTransactionRef] = useState('');
+
+  // Evidence file state with in-browser SHA-256 calculation
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [fileSha256, setFileSha256] = useState<string | null>(null);
+  const [calculatingHash, setCalculatingHash] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [submittedReport, setSubmittedReport] = useState<IncidentReport | null>(null);
+  const [uploadedEvidenceId, setUploadedEvidenceId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const handleFileChange = async (file: File) => {
+    setEvidenceFile(file);
+    setCalculatingHash(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const digestBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(digestBuffer));
+      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      setFileSha256(hashHex);
+    } catch (err) {
+      console.error("Hash calculation error:", err);
+    } finally {
+      setCalculatingHash(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +56,8 @@ export const ReportIncident: React.FC = () => {
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
-      const res = await incidentService.submitIncident({
+      // 1. Submit incident
+      const inc = await incidentService.submitIncident({
         category,
         title,
         description,
@@ -42,7 +67,19 @@ export const ReportIncident: React.FC = () => {
         indicators_involved: indicators,
         transaction_reference: transactionRef || null
       });
-      setSubmittedReport(res);
+
+      // 2. If evidence file attached, upload directly to Evidence Vault
+      if (evidenceFile) {
+        const formData = new FormData();
+        formData.append('incident_id', inc.id);
+        formData.append('file', evidenceFile);
+        const evRes = await api.post('/evidence/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setUploadedEvidenceId(evRes.data.evidence_id);
+      }
+
+      setSubmittedReport(inc);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to submit incident report. Please try again.');
     } finally {
@@ -67,9 +104,9 @@ export const ReportIncident: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white">Incident Recorded Successfully</h2>
+            <h2 className="text-2xl font-black text-white">Incident Recorded & Fingerprinted</h2>
             <p className="text-xs text-slate-300">
-              Your report has been secured and queued for threat pattern correlation and evidence preservation.
+              Your report and attached evidence have been cryptographically secured in the evidence vault.
             </p>
           </div>
 
@@ -91,37 +128,45 @@ export const ReportIncident: React.FC = () => {
               </button>
             </div>
             {copied && <div className="text-xs text-emerald-400">Copied to clipboard!</div>}
-            <p className="text-xs text-slate-400 pt-1">
-              Save this code. You can use it anytime on our Track Status page to review updates without needing an account.
-            </p>
+
+            {fileSha256 && (
+              <div className="pt-2 border-t border-navy-900 text-left font-mono text-[11px] space-y-1">
+                <span className="text-slate-400">Evidence SHA-256 Hash:</span>
+                <div className="text-cyan-300 break-all select-all bg-navy-900 p-2 rounded border border-navy-800">
+                  {fileSha256}
+                </div>
+                {uploadedEvidenceId && (
+                  <div className="text-[10px] text-slate-400 pt-1">
+                    Vault Evidence ID: <span className="text-cyan-400">{uploadedEvidenceId}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-amber-950/30 border border-amber-900/40 p-4 rounded-lg text-xs text-amber-200 text-left space-y-1">
-            <strong>Legal Notice & Official Assistance:</strong>
+            <strong>Official National Reporting:</strong>
             <p>
-              CYBERSHIELD is an assistance and intelligence platform. If you have suffered a financial loss, report immediately to the National Cybercrime Portal (<strong>cybercrime.gov.in</strong>) or dial <strong>1930</strong>.
+              If money was debited from your account, report to <strong>1930</strong> (Financial Cyber Fraud Helpline) immediately to initiate a lien hold.
             </p>
           </div>
 
-          <div className="flex justify-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <a
+              href={`/api/v1/evidence/report/${submittedReport.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-5 py-2.5 bg-navy-800 hover:bg-navy-700 border border-cyan-800 text-cyan-300 font-bold rounded-lg transition flex items-center justify-center space-x-1.5 text-xs font-mono"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Download PDF Assistance Report</span>
+            </a>
             <Link
               to={`/track-status?ref=${submittedReport.reference_code}`}
-              className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-navy-950 font-bold rounded-lg transition"
+              className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-navy-950 font-bold rounded-lg transition text-xs font-mono flex items-center justify-center"
             >
-              View Incident Status
+              Track Incident Status
             </Link>
-            <button
-              onClick={() => {
-                setSubmittedReport(null);
-                setTitle('');
-                setDescription('');
-                setIndicatorsText('');
-                setTransactionRef('');
-              }}
-              className="px-5 py-2.5 bg-navy-800 hover:bg-navy-700 text-slate-300 rounded-lg transition"
-            >
-              Submit Another Report
-            </button>
           </div>
         </div>
       </div>
@@ -133,11 +178,11 @@ export const ReportIncident: React.FC = () => {
       <div className="text-center space-y-3">
         <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-navy-800 border border-red-500/30 text-xs font-mono text-red-400">
           <ShieldAlert className="w-3.5 h-3.5" />
-          <span>MODULE 6: CITIZEN INCIDENT REPORTING PORTAL</span>
+          <span>MODULE 6 & 7: CITIZEN REPORTING & EVIDENCE VAULT</span>
         </div>
         <h1 className="text-3xl font-black text-white">Report a Cybercrime Incident</h1>
         <p className="text-sm text-slate-300 max-w-xl mx-auto">
-          Securely submit details of fraud, extortion, or phishing. Your submission enables pattern correlation across malicious campaigns while safeguarding victim privacy.
+          Securely submit details of fraud, extortion, or phishing. Computes cryptographic hashes in your browser before upload to guarantee evidence integrity.
         </p>
       </div>
 
@@ -199,6 +244,47 @@ export const ReportIncident: React.FC = () => {
               placeholder="Describe what occurred, how the scammer contacted you, which apps or links were involved, and any monetary amounts..."
               className="w-full bg-navy-950 border border-navy-700 rounded-lg p-3 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
             />
+          </div>
+
+          {/* Evidence File Drag-and-Drop Vault */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              Attach Evidence File (Screenshot / Chat Export / PDF)
+            </label>
+            <div className="border-2 border-dashed border-navy-700 hover:border-cyan-500/50 rounded-xl p-5 text-center bg-navy-950/60 transition">
+              <input
+                type="file"
+                accept=".png,.jpg,.jpeg,.pdf,.txt"
+                onChange={(e) => e.target.files && handleFileChange(e.target.files[0])}
+                className="hidden"
+                id="evidence-file-input"
+              />
+              <label htmlFor="evidence-file-input" className="cursor-pointer space-y-1.5 block">
+                <Upload className="w-6 h-6 text-cyan-400 mx-auto" />
+                <div className="text-xs font-bold text-white">
+                  {evidenceFile ? evidenceFile.name : "Click to select or drop evidence file here"}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {evidenceFile ? `Size: ${(evidenceFile.size / 1024).toFixed(1)} KB` : "Supports PNG, JPG, PDF, TXT (Max 15MB)"}
+                </div>
+              </label>
+            </div>
+
+            {/* In-Browser Real-Time SHA-256 Display */}
+            {calculatingHash && (
+              <div className="text-[11px] font-mono text-cyan-400 animate-pulse">
+                Calculating SHA-256 cryptographic digest in browser...
+              </div>
+            )}
+            {fileSha256 && (
+              <div className="p-3 bg-navy-950 rounded-lg border border-navy-800 text-[11px] font-mono space-y-1">
+                <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>SHA-256 Hash Computed (Client-Side Verification):</span>
+                </div>
+                <div className="text-slate-300 break-all select-all">{fileSha256}</div>
+              </div>
+            )}
           </div>
 
           {/* Indicators */}
@@ -275,16 +361,12 @@ export const ReportIncident: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-navy-950/40 p-3 rounded text-[11px] text-slate-400 italic">
-            <strong>Disclaimers:</strong> CYBERSHIELD does not guarantee fund recovery and is not a formal substitute for a First Information Report (FIR). For formal legal and monetary relief, report to 1930 and cybercrime.gov.in.
-          </div>
-
           <button
             type="submit"
             disabled={loading}
             className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition disabled:opacity-50 flex items-center justify-center space-x-2 shadow-lg shadow-red-950/50"
           >
-            <span>{loading ? 'Securing & Registering Incident...' : 'Submit Incident & Generate Reference'}</span>
+            <span>{loading ? 'Securing & Registering Incident...' : 'Submit Incident & Lock Evidence'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>

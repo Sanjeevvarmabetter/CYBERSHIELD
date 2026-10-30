@@ -96,13 +96,21 @@ export const Navbar: React.FC = () => {
           >
             Track Status
           </Link>
+          <Link
+            to="/challenge"
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+              location.pathname === '/challenge' ? 'bg-navy-700 text-amber-300' : 'text-amber-400 hover:text-amber-300 hover:bg-navy-800'
+            }`}
+          >
+            Spot The Scam
+          </Link>
 
           {/* Cyber Intelligence Console Link for Analysts/Admins */}
           {isAnalystOrAdmin && (
             <div className="pl-2 ml-2 border-l border-navy-700 flex items-center space-x-1">
               <Link
                 to="/console/dashboard"
-                className={`px-2.5 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
                   location.pathname === '/console/dashboard' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
                 }`}
               >
@@ -110,31 +118,55 @@ export const Navbar: React.FC = () => {
               </Link>
               <Link
                 to="/console/incidents"
-                className={`px-2.5 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
                   location.pathname === '/console/incidents' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
                 }`}
               >
                 Cases
               </Link>
               <Link
+                to="/console/evidence"
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                  location.pathname === '/console/evidence' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
+                }`}
+              >
+                Evidence
+              </Link>
+              <Link
                 to="/console/fraud"
-                className={`px-2.5 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
                   location.pathname === '/console/fraud' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
                 }`}
               >
-                Fraud Engine
+                Fraud
               </Link>
               <Link
                 to="/console/graph"
-                className={`px-2.5 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
                   location.pathname === '/console/graph' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
                 }`}
               >
                 Graph
               </Link>
               <Link
+                to="/console/models"
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                  location.pathname === '/console/models' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
+                }`}
+              >
+                Telemetry
+              </Link>
+              <Link
+                to="/console/assistant"
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                  location.pathname === '/console/assistant' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
+                }`}
+              >
+                Copilot
+              </Link>
+              <Link
                 to="/console/audit"
-                className={`px-2.5 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
+                className={`px-2 py-1.5 rounded-md text-xs font-mono font-semibold transition ${
                   location.pathname === '/console/audit' ? 'bg-cyan-500 text-navy-950 font-bold' : 'text-cyan-400 hover:bg-navy-800'
                 }`}
               >
@@ -227,14 +259,73 @@ export const Navbar: React.FC = () => {
           >
             Track Status
           </Link>
+          <Link
+            to="/challenge"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded text-sm text-amber-300 hover:bg-navy-800"
+          >
+            Spot The Scam Challenge
+          </Link>
           {isAnalystOrAdmin && (
-            <Link
-              to="/console/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded text-sm font-mono text-cyan-300 bg-navy-800 border border-cyan-500/30"
-            >
-              Access Intelligence Console
-            </Link>
+            <div className="space-y-1 pt-2 border-t border-navy-800">
+              <div className="text-[10px] font-mono uppercase text-slate-400 px-3">Intelligence Console</div>
+              <Link
+                to="/console/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/console/incidents"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Incident Queue
+              </Link>
+              <Link
+                to="/console/evidence"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Evidence Vault
+              </Link>
+              <Link
+                to="/console/fraud"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Fraud Engine
+              </Link>
+              <Link
+                to="/console/graph"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Graph Intelligence
+              </Link>
+              <Link
+                to="/console/models"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Model Telemetry
+              </Link>
+              <Link
+                to="/console/assistant"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Copilot Assistant
+              </Link>
+              <Link
+                to="/console/audit"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-1.5 rounded text-xs font-mono text-cyan-300 hover:bg-navy-800"
+              >
+                Audit Trail
+              </Link>
+            </div>
           )}
           <div className="pt-3 border-t border-navy-800 flex items-center justify-between">
             {isAuthenticated && user ? (

@@ -8,6 +8,7 @@ import { PhishingChecker } from './pages/citizen/PhishingChecker';
 import { ReportIncident } from './pages/citizen/ReportIncident';
 import { SafetyCenter } from './pages/citizen/SafetyCenter';
 import { TrackStatus } from './pages/citizen/TrackStatus';
+import { ScamChallenge } from './pages/citizen/ScamChallenge';
 import { Login } from './pages/citizen/Login';
 import { Register } from './pages/citizen/Register';
 import { ConsoleDashboard } from './pages/console/Dashboard';
@@ -15,6 +16,9 @@ import { IncidentQueue } from './pages/console/IncidentQueue';
 import { FraudAnalytics } from './pages/console/FraudAnalytics';
 import { GraphView } from './pages/console/GraphView';
 import { AuditLogs } from './pages/console/AuditLogs';
+import { EvidenceManager } from './pages/console/EvidenceManager';
+import { ModelTelemetry } from './pages/console/ModelTelemetry';
+import { CopilotWorkspace } from './pages/console/CopilotWorkspace';
 
 const ProtectedConsoleRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAnalystOrAdmin, loading } = useAuth();
@@ -40,6 +44,7 @@ export const App: React.FC = () => {
               <Route path="/report" element={<ReportIncident />} />
               <Route path="/safety-center" element={<SafetyCenter />} />
               <Route path="/track-status" element={<TrackStatus />} />
+              <Route path="/challenge" element={<ScamChallenge />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
@@ -61,6 +66,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="/console/evidence"
+                element={
+                  <ProtectedConsoleRoute>
+                    <EvidenceManager />
+                  </ProtectedConsoleRoute>
+                }
+              />
+              <Route
                 path="/console/fraud"
                 element={
                   <ProtectedConsoleRoute>
@@ -73,6 +86,22 @@ export const App: React.FC = () => {
                 element={
                   <ProtectedConsoleRoute>
                     <GraphView />
+                  </ProtectedConsoleRoute>
+                }
+              />
+              <Route
+                path="/console/models"
+                element={
+                  <ProtectedConsoleRoute>
+                    <ModelTelemetry />
+                  </ProtectedConsoleRoute>
+                }
+              />
+              <Route
+                path="/console/assistant"
+                element={
+                  <ProtectedConsoleRoute>
+                    <CopilotWorkspace />
                   </ProtectedConsoleRoute>
                 }
               />

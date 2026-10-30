@@ -2,17 +2,61 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, s
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 from backend.app.database.connection import get_db
 from backend.app.database.models.models import Evidence, Incident, User
 from backend.app.evidence.storage import save_uploaded_evidence
+from backend.app.evidence.hashing import verify_file_integrity
 from backend.app.evidence.export_pdf import generate_evidence_assistance_pdf
 from backend.app.core.audit import record_audit_log
 from backend.app.dependencies import get_current_user_optional, require_role
 from backend.app.core.permissions import UserRole
 
 router = APIRouter(prefix="/evidence", tags=["Digital Evidence Vault"])
+
+@router.get("", response_model=List[dict])
+def list_evidence_inventory(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ANALYST))
+):
+    """List all secured evidentiary items across cases for authorized analysts."""
+    items = db.query(Evidence).order_by(Evidence.created_at.desc()).limit(100).all()
+    out = []
+    for ev in items:
+        inc = db.query(Incident).filter(Incident.id == ev.incident_id).first()
+        out.append({
+            "id": ev.id,
+            "incident_id": ev.incident_id,
+            "reference_code": inc.reference_code if inc else "UNKNOWN",
+            "file_name": ev.file_name,
+            "file_size": ev.file_size,
+            "mime_type": ev.mime_type,
+            "sha256_hash": ev.sha256_hash,
+            "created_at": ev.created_at.isoformat()
+        })
+    return out
+
+@router.get("/{evidence_id}/verify")
+def verify_evidence_integrity(
+    evidence_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.ANALYST))
+):
+    """Perform cryptographic SHA-256 integrity check against stored binary file."""
+    item = db.query(Evidence).filter(Evidence.id == evidence_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Evidence item not found")
+
+    is_valid = verify_file_integrity(item.storage_path, item.sha256_hash)
+    return {
+        "evidence_id": item.id,
+        "file_name": item.file_name,
+        "recorded_sha256": item.sha256_hash,
+        "file_exists_on_disk": Path(item.storage_path).exists(),
+        "integrity_verified": is_valid,
+        "verification_timestamp": Path(item.storage_path).stat().st_mtime if Path(item.storage_path).exists() else None
+    }
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_evidence(
