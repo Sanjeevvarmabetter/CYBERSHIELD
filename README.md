@@ -1,8 +1,10 @@
 # CYBERSHIELD
 ## Digital Crime Prevention & Intelligence Platform
 
-> **"Detect. Understand. Protect."**
+> **"Detect. Understand. Protect."**  
 > An intelligent, privacy-first cybersecurity platform that helps individuals identify online scams, analyze suspicious digital activity, preserve incident evidence, discover related threat patterns, and take informed action against digital crime.
+
+📖 **[Read the Full Platform Documentation & Operator Manual (DOCUMENTATION.md)](DOCUMENTATION.md)** for exhaustive architectural details, detection logic, and operator credentials.
 
 ---
 
